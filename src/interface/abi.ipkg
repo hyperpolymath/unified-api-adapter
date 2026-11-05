@@ -34,3 +34,6 @@ depends = base
 modules = Abi.Types
         , Abi.Layout
         , Abi.Foreign
+        , Abi.Protocol
+        , Abi.Status
+        , Abi.Dispatch
