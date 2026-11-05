@@ -3,12 +3,11 @@ message: "If you use this software, please cite it as below."
 authors:
   - family-names: "Jewell"
     given-names: "Jonathan D.A."
-    orcid: "https://orcid.org/0000-0002-3078-6652"
-title: "{{PROJECT_NAME}}"
+title: "Unified API Adapter"
 version: 0.1.0
-date-released: "{{CURRENT_DATE}}"
-url: "https://{{FORGE}}/{{OWNER}}/{{REPO}}"
-repository-code: "https://{{FORGE}}/{{OWNER}}/{{REPO}}"
+date-released: "2026-11-05"
+url: "https://github.com/hyperpolymath/unified-api-adapter"
+repository-code: "https://github.com/hyperpolymath/unified-api-adapter"
 license: MPL-2.0
 keywords:
   - "rsr"
