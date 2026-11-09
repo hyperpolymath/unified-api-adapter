@@ -1,12 +1,166 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= RSR Template Repo - Explainme
+= Unified API Adapter - Explainme
 image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[License: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
 
 :toc:
 :icons: font
 
-This file explains how the key template claims map to real files.
+This file maps the README's claims to the files and checks behind them. The
+first two sections are this repository's own: the proof ledger and the known
+gaps. The sections after them were inherited from the RSR template and
+describe template conventions.
+
+[[proof-ledger]]
+== Proof Ledger
+
+Statuses use the closed vocabulary of the estate README/EXPLAINME standard
+(§5) and `standards/3-practice/PROOF-POLICY.adoc` §5. Every row here is an
+engineering obligation, checked in Idris2 (PROOF-POLICY §1), so no row carries
+a Proof Witness Grade: PWG applies to theory only.
+
+*Census: 10 proven of 15; 4 open, 1 argued.* The receipts for the proven rows (checker
+version, invocation, input digests, commit, negative controls) are in
+link:status/PROOF-STATUS.adoc[PROOF-STATUS].
+
+Every `proven` row is proven *for the Idris2 model* in `src/interface/Abi/`.
+Two links are not modelled. The first is the step from a `Bits8` at the C
+boundary to a constructor; it is covered by the decode-soundness row. The
+second is the step from the model to a Zig runtime, which does not exist yet;
+it is covered by the transport-table row. Both rows are `open`.
+
+[cols="2,1,2,2,2", options="header"]
+|===
+| Obligation | Status | Checker (version, flags) | Where | Trust boundary
+
+| Every protocol's tag decodes back to that protocol
+| proven
+| Idris2 0.7.0, `%default total`, no escape hatches; `idris2 --typecheck src/interface/abi.ipkg`
+| `src/interface/Abi/Protocol.idr:protocolRoundtrip`
+| Over the nine-constructor model; the Zig mirror is the transport-table row
+
+| Distinct protocols have distinct tags
+| proven
+| as above
+| `src/interface/Abi/Protocol.idr:protocolTagInjective`
+| Model only
+
+| Tag 0 names no protocol and dispatches to `InvalidParam`
+| proven
+| as above
+| `src/interface/Abi/Protocol.idr:tagZeroInvalid`, `src/interface/Abi/Dispatch.idr:routeTagZero`
+| Model only
+
+| Every protocol constructor appears in the local list `allProtocols` (nine entries)
+| proven
+| as above
+| `src/interface/Abi/Protocol.idr:allProtocolsComplete`
+| Completeness of the local list only; says nothing about `boj-server`
+
+| The nine protocols and their tags 1..9 agree with `boj-server`'s `Boj.Protocol`
+| argued
+| -
+| `src/interface/Abi/Protocol.idr` read against `boj-server` `Boj.Protocol`
+| Checked by reading the two files, not by a checker. Nothing detects a later change to either taxonomy; closing it needs a shared definition or a cross-repo check.
+
+| Status codes round-trip, and `Ok` is 0
+| proven
+| as above
+| `src/interface/Abi/Status.idr:statusRoundtrip`, `okIsZero`
+| Model only
+
+| `Unsupported` and `InvalidParam` are different codes
+| proven
+| as above
+| `src/interface/Abi/Status.idr:unsupportedNotInvalid`
+| Model only
+
+| Every named protocol either routes to a transport or is refused with `Unsupported`, and nothing else
+| proven
+| as above
+| `src/interface/Abi/Dispatch.idr:routeDecided` (from `routeImplemented`, `routeRefuses`)
+| Model only; the runtime table is the transport-table row
+
+| A known protocol is never refused as `InvalidParam`
+| proven
+| as above
+| `src/interface/Abi/Dispatch.idr:routeNeverInvalid`
+| Model only
+
+| Dispatching a protocol's tag is dispatching the protocol, and a tag that decodes to nothing gives `InvalidParam`
+| proven
+| as above
+| `src/interface/Abi/Dispatch.idr:routeTagSound`, `routeTagUnknown`
+| `routeTagUnknown` takes the failed decode as a hypothesis
+
+| Exactly MCP and REST have transports
+| proven
+| as above
+| `src/interface/Abi/Dispatch.idr:implementedCensus`
+| A census of the model's `implemented`. No transport code exists in this repository yet.
+
+| Decode soundness: if a tag decodes to a protocol (or a status), that constructor's tag is the input
+| open
+| -
+| not stated
+| `Bits8` equality is primitive, and Idris2's base library gives no lemma from `==` on `Bits8` to propositional equality. The statement cannot be proved over `Bits8` without an escape hatch. Two routes are open: decode over `Nat`/`Fin 256` with a single boundary cast, or an exhaustive 256-tag test (`tested-only`).
+
+| The Zig transport table agrees with `route` on all 256 tags
+| open
+| -
+| no Zig runtime yet (`src/interface/ffi/` holds the template's)
+| Blocked on the runtime: REST moved from `zig-api`, a new MCP client, refusals for the rest
+
+| The Idris2 `%foreign` bindings name this library's C exports
+| open
+| -
+| `src/interface/Abi/Foreign.idr`
+| Known mismatch. The bindings name `rsr_*` in `librsr`, and the Zig exports `unified_api_adapter_*`. The defect is inherited from the template.
+
+| The C header is generated from the Idris2 ABI
+| open
+| -
+| `src/interface/generated/abi/`
+| No generator is wired
+|===
+
+The template's example proofs under `verification/proofs/` (including
+`Types.idr` and `ABI/Foreign.idr`, which compile) are layout examples, not
+evidence. They are not rows here and are not counted
+(`verification/proofs/README.adoc`). Replacing or deleting them is a
+follow-up.
+
+No CI job typechecks these modules. No workflow installs Idris2, so
+`scripts/run-proven-suite.sh` records the corpus as `Static-Checked`. The
+receipts are therefore from a local run, not from CI.
+
+[[known-gaps]]
+== Known Gaps
+
+[CAUTION]
+====
+*Transports.* The README and AFFIRMATION describe REST and MCP transports.
+None exists in this repository yet. The REST connector is still in
+`developer-ecosystem/zig-api`, and the MCP client is not written.
+====
+
+[CAUTION]
+====
+*Zig mirror and seam tests.* The protocol taxonomy is mirrored in Zig and
+seam-tested in `boj-server`, where it comes from. Here only the Idris2 side
+exists (ledger rows "Zig transport table" and "Foreign bindings").
+====
+
+[CAUTION]
+====
+*Endpoint registry.* The README's layer table lists an open endpoint
+registry in the Idris2 ABI. It is not written yet.
+====
+
+[CAUTION]
+====
+*Proofs are not checked in CI.* See the note under the proof ledger.
+====
 
 == Central Session Protocol Authority
 
