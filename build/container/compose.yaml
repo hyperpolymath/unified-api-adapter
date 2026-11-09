@@ -21,7 +21,7 @@
     # ──────────────────────────────────────────────────────────────────────
     # Primary application service
     # ──────────────────────────────────────────────────────────────────────
-    "unified-api-adapter": {
+    unified-api-adapter: {
       build: {
         context: "..",
         dockerfile: "build/container/Containerfile",
@@ -74,7 +74,7 @@
         "rokur-audit:/var/log/rokur",
       ],
       depends_on: {
-        "unified-api-adapter": {
+        unified-api-adapter: {
           condition: "service_healthy",
         },
       },
@@ -128,7 +128,7 @@
     },
   },
   volumes: {
-    "unified-api-adapter-data": null,
+    unified-api-adapter-data: null,
     rokur-audit: null,
   },
 }
