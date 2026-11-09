@@ -87,9 +87,10 @@ Proof obligations follow the estate proof policy
 (`standards/3-practice/PROOF-POLICY.adoc`): Idris2 for the ABI, Kani for the
 `unsafe` and FFI seams of Rust callers.
 
-*Proofs:* 10 proven of 14; 4 open, all named in
+*Proofs:* 10 proven of 15; 4 open, 1 argued, all named in
 link:docs/EXPLAINME.adoc#proof-ledger[the proof ledger]. Proven means proven
-for the Idris2 model; the Zig runtime and the C boundary are open rows.
+for the Idris2 model; the Zig runtime and the C boundary are open rows, and
+agreement with `boj-server`'s taxonomy is argued.
 
 == Where to go next
 

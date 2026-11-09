@@ -8,7 +8,7 @@ link:../EXPLAINME.adoc#proof-ledger[proof ledger]. This file holds what the
 ledger cites: the receipts for its `proven` rows, the state of each proof
 file the proof gate knows about, and the exceptions to the proof policy.
 
-*Census: 10 proven of 14; 4 open.* This is a count of ledger rows, not a
+*Census: 10 proven of 15; 4 open, 1 argued.* This is a count of ledger rows, not a
 percentage. All rows are engineering obligations under
 `standards/3-practice/PROOF-POLICY.adoc` §1 (Idris2), so they carry §5
 status tokens and no Proof Witness Grade.
@@ -26,7 +26,10 @@ status tokens and no Proof Witness Grade.
 | `cd src/interface && idris2 --typecheck abi.ipkg`
 
 | Inputs (SHA-256)
-| `Abi/Protocol.idr` `db20f1475ddcaeb3fdd7366b08b184d61c34d92d9597917e88e157a4312026ab` +
+| `Abi/Types.idr` `7836d50fabfe42e808135105aa7c9e90c042c88aea30d9406d592b4b0f393a50` +
+`Abi/Layout.idr` `dd763389c08e8007d7dfd559bc206cab8fd3b3f3d58e6809a3acec3d3f8376d0` +
+`Abi/Foreign.idr` `bcc8072cd98e605c01ef8bbd6444b0138ef744837584058d2cb06e08c4d35287` +
+`Abi/Protocol.idr` `db20f1475ddcaeb3fdd7366b08b184d61c34d92d9597917e88e157a4312026ab` +
 `Abi/Status.idr` `de488ea01b7078d889ea4fd509cb5298741b3496cc0630815c46edc1468e8b34` +
 `Abi/Dispatch.idr` `9d4c1659252334bcb0cfa23e762df4b426f40195b581cd389376b76910a5b23d` +
 `abi.ipkg` `7f4393dcac5c107afa7cf6cc8deeadaa44175c02afc7a65f25aa50db85569191`

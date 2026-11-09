@@ -19,7 +19,7 @@ Statuses use the closed vocabulary of the estate README/EXPLAINME standard
 engineering obligation, checked in Idris2 (PROOF-POLICY §1), so no row carries
 a Proof Witness Grade: PWG applies to theory only.
 
-*Census: 10 proven of 14; 4 open.* The receipts for the proven rows (checker
+*Census: 10 proven of 15; 4 open, 1 argued.* The receipts for the proven rows (checker
 version, invocation, input digests, commit, negative controls) are in
 link:status/PROOF-STATUS.adoc[PROOF-STATUS].
 
@@ -51,11 +51,17 @@ it is covered by the transport-table row. Both rows are `open`.
 | `src/interface/Abi/Protocol.idr:tagZeroInvalid`, `src/interface/Abi/Dispatch.idr:routeTagZero`
 | Model only
 
-| The taxonomy is exactly the nine `boj-server` protocols
+| Every protocol constructor appears in the local list `allProtocols` (nine entries)
 | proven
 | as above
 | `src/interface/Abi/Protocol.idr:allProtocolsComplete`
-| Agreement with `boj-server`'s `Boj.Protocol` tags was checked by reading the two files, not by a checker. That comparison is `argued`.
+| Completeness of the local list only; says nothing about `boj-server`
+
+| The nine protocols and their tags 1..9 agree with `boj-server`'s `Boj.Protocol`
+| argued
+| -
+| `src/interface/Abi/Protocol.idr` read against `boj-server` `Boj.Protocol`
+| Checked by reading the two files, not by a checker. Nothing detects a later change to either taxonomy; closing it needs a shared definition or a cross-repo check.
 
 | Status codes round-trip, and `Ok` is 0
 | proven
