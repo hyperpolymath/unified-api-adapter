@@ -41,7 +41,8 @@ Two things already exist in the estate and are joined here:
 
 * the *protocol taxonomy* from `boj-server` (`Boj.Protocol`): nine wire
   protocols (MCP, LSP, DAP, BSP, NeSy, Agentic, Fleet, gRPC, REST) with an
-  Idris2-proven tag encoding, mirrored in Zig and seam-tested;
+  Idris2-proven tag encoding (mirrored in Zig and seam-tested in `boj-server`;
+  here the Idris2 side exists and the Zig side is still to come);
 * the *HTTP connector pool* from `developer-ecosystem/zig-api`
   (`connector.zig`, `uapi_connector_*`), the only one of those protocols with a
   working client today.
@@ -85,6 +86,11 @@ take it as a pinned dependency instead of carrying their own copies, and
 Proof obligations follow the estate proof policy
 (`standards/3-practice/PROOF-POLICY.adoc`): Idris2 for the ABI, Kani for the
 `unsafe` and FFI seams of Rust callers.
+
+*Proofs:* 10 proven of 15; 4 open, 1 argued, all named in
+link:docs/EXPLAINME.adoc#proof-ledger[the proof ledger]. Proven means proven
+for the Idris2 model; the Zig runtime and the C boundary are open rows, and
+agreement with `boj-server`'s taxonomy is argued.
 
 == Where to go next
 

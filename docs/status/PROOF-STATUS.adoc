@@ -1,101 +1,120 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-// Template: rsr-template-repo/docs/status/PROOF-STATUS.adoc
-// Tracks proof completion. Requirements defined in PROOF-NEEDS.adoc
-= Proof Status — UNIFIED_API_ADAPTER
+// Requirements: PROOF-NEEDS.adoc. Ledger: ../EXPLAINME.adoc#proof-ledger.
+= Proof Status — Unified API Adapter
 
-== Summary
+The canonical list of obligations and their statuses is the
+link:../EXPLAINME.adoc#proof-ledger[proof ledger]. This file holds what the
+ledger cites: the receipts for its `proven` rows, the state of each proof
+file the proof gate knows about, and the exceptions to the proof policy.
 
-[cols="2,1,1,1,1,1", options="header"]
+*Census: 10 proven of 15; 4 open, 1 argued.* This is a count of ledger rows, not a
+percentage. All rows are engineering obligations under
+`standards/3-practice/PROOF-POLICY.adoc` §1 (Idris2), so they carry §5
+status tokens and no Proof Witness Grade.
+
+== Receipts
+
+[cols="1,3", options="header"]
 |===
-| Category | Total | Done | In Progress | Blocked | Remaining
+| Field | Value
 
-| ABI/FFI (ABI) | 5 | 0 | 0 | 0 | 5
-| Typing (TP) | 2 | 0 | 0 | 0 | 2
-| Invariant (INV) | 0 | 0 | 0 | 0 | 0
-| Security (SEC) | 0 | 0 | 0 | 0 | 0
-| Concurrency (CONC) | 0 | 0 | 0 | 0 | 0
-| Algorithm (ALG) | 0 | 0 | 0 | 0 | 0
-| Domain (DOM) | 0 | 0 | 0 | 0 | 0
-| *Total* | *7* | *0* | *0* | *0* | *7*
-|===
+| Checker
+| Idris 2, version 0.7.0, built from source (Chez Scheme backend)
 
-*Overall*: 0% proven
+| Invocation
+| `cd src/interface && idris2 --typecheck abi.ipkg`
 
-== Proofs Done
+| Inputs (SHA-256)
+| `Abi/Types.idr` `7836d50fabfe42e808135105aa7c9e90c042c88aea30d9406d592b4b0f393a50` +
+`Abi/Layout.idr` `dd763389c08e8007d7dfd559bc206cab8fd3b3f3d58e6809a3acec3d3f8376d0` +
+`Abi/Foreign.idr` `bcc8072cd98e605c01ef8bbd6444b0138ef744837584058d2cb06e08c4d35287` +
+`Abi/Protocol.idr` `db20f1475ddcaeb3fdd7366b08b184d61c34d92d9597917e88e157a4312026ab` +
+`Abi/Status.idr` `de488ea01b7078d889ea4fd509cb5298741b3496cc0630815c46edc1468e8b34` +
+`Abi/Dispatch.idr` `9d4c1659252334bcb0cfa23e762df4b426f40195b581cd389376b76910a5b23d` +
+`abi.ipkg` `7f4393dcac5c107afa7cf6cc8deeadaa44175c02afc7a65f25aa50db85569191`
 
-// Format:
-// | ID | Proof | Prover | File | Date | Verified By |
-// | ABI-1 | Non-null pointer proofs | Idris2 | verification/proofs/idris2/ABI/Pointers.idr | 2026-XX-XX | idris2 --check |
+| Result
+| exit 0; six of six modules built; no `Error:` line. Two "implicitly bind
+lowercase names" warnings come from the template's `Abi/Layout.idr`, not
+from the three modules above.
 
-[cols="1,3,1,3,1,2", options="header"]
-|===
-| ID | Proof | Prover | File | Date | Verified By
+| Axioms and escape hatches
+| none. All three modules are `%default total`. A grep finds no
+`believe_me`, `assert_total`, `assert_smaller`, `idris_crash`, `postulate`,
+`partial` or `unsafePerformIO`.
 
-| — | No proofs completed yet | — | — | — | —
-|===
+| Source
+| `hyperpolymath/unified-api-adapter` at
+`68cf81fa0b65d039c4622444754de56209e8fa82`. The three modules are unchanged
+since they merged in `ef01bca`.
 
-== Proofs In Progress
-
-[cols="1,3,1,2,1,2", options="header"]
-|===
-| ID | Proof | Prover | Assignee | Started | Blocker
-
-| — | — | — | — | — | —
-|===
-
-== Proofs Blocked
-
-[cols="1,3,2,3", options="header"]
-|===
-| ID | Proof | Blocked By | Notes
-
-| — | — | — | —
-|===
-
-== Proofs Remaining
-
-[cols="1,3,1,1,1,1", options="header"]
-|===
-| ID | Proof | Category | Prover | Priority | Est. Effort
-
-| ABI-1 | Non-null pointer proofs | ABI | Idris2 | P1 | 2h
-| ABI-2 | Memory layout correctness | ABI | Idris2 | P1 | 4h
-| ABI-3 | Platform type size proofs | ABI | Idris2 | P1 | 2h
-| ABI-4 | FFI function return type proofs | ABI | Idris2 | P1 | 2h
-| ABI-5 | C ABI compliance | ABI | Idris2 | P1 | 4h
-| TP-1 | Core data type well-formedness | TP | Idris2 | P1 | 4h
-| TP-2 | Public API type safety | TP | Lean4 | P2 | 4h
+| Where it ran
+| A local agent session on 2026-11-09. *Not CI.* No workflow installs
+Idris2 yet, so this receipt is not reproduced per commit.
 |===
 
-== Verification Commands
+=== Negative controls
+
+A proof that cannot fail is not evidence. Each mutation below was applied to
+a copy of `src/interface/`, and the package was typechecked again. All six
+were rejected.
+
+[cols="2,3,2", options="header"]
+|===
+| Mutation | Change | Rejected by
+
+| Tag collision | `protocolTag REST = 9` -> `7` (Fleet's tag) | `protocolRoundtrip`
+| Dropped decode | `protocolFromTag 9 = Just REST` -> `Nothing` | `protocolRoundtrip`
+| Implemented protocol refused | `route MCP = Right ViaMcp` -> `Left Unsupported` | `routeImplemented`
+| Unimplemented protocol admitted | `route LSP = Left Unsupported` -> `Right ViaRest` | `routeRefuses`
+| Status collision | `statusTag Unsupported = 11` -> `2` | `statusRoundtrip`
+| Wrong refusal | `route LSP = Left Unsupported` -> `Left InvalidParam` | `routeRefuses`
+|===
+
+== Proof files known to the gate
+
+`just proof-check-idris2` (`scripts/check-proofs.sh idris2`) reads
+`verification/proofs/idris2/MANIFEST`. It checks only files under
+`verification/proofs/idris2/`. The adapter's own modules in
+`src/interface/Abi/` are outside its reach and are checked through
+`abi.ipkg` as above. Every file below is a template example: the gate
+keeps them honest, but none of them is evidence or counted in the census
+(`verification/proofs/README.adoc`).
+
+[cols="2,1,3", options="header"]
+|===
+| File | MANIFEST | State (idris2 0.7.0, 2026-11-09)
+
+| `ABI/Foreign.idr` | gated | compiles; template placeholder signatures
+| `Types.idr` | gated | compiles; template placeholder type. Promoted from quarantine when the ratchet reported an unexpected pass. It imports `Data.Nat`, so the recorded failure no longer applies.
+| `ABI/Layout.idr` | quarantine | does not compile (as recorded)
+| `ABI/Platform.idr` | quarantine | does not compile (as recorded)
+| `ABI/Pointers.idr` | quarantine | does not compile (as recorded)
+| `ABI/Compliance.idr` | quarantine | does not compile (as recorded)
+|===
+
+== Exceptions to the proof policy
+
+None. The open decode-soundness row will need one of two routes. The first
+is an Idris2 restatement over `Nat`/`Fin 256`, which stays inside §1. The
+second is an exhaustive Zig test over all 256 tags, which is `tested-only`
+and is recorded as `TESTED` with its bound.
+
+== Reproduce
 
 [source,bash]
 ----
-# Check all Idris2 proofs
-just proof-check-idris2
-
-# Check all Lean4 proofs
-just proof-check-lean4
-
-# Check all Agda proofs
-just proof-check-agda
-
-# Check all Coq proofs
-just proof-check-coq
-
-# Run all proof checks
-just proof-check-all
-
-# Scan for dangerous patterns
-panic-attack assail --proofs-only
+cd src/interface && idris2 --typecheck abi.ipkg   # the ledger's proven rows
+just proof-check-idris2                           # the MANIFEST gate
 ----
 
 == Changelog
 
-[cols="1,3,1", options="header"]
+[cols="1,3", options="header"]
 |===
-| Date | Change | By
+| Date | Change
 
-| 2026-04-04 | Initial proof status tracking | Template
+| 2026-04-04 | Template skeleton
+| 2026-11-09 | Replaced the skeleton's percentage summary with the census, receipts and negative controls for `Abi.Protocol`, `Abi.Status` and `Abi.Dispatch`; promoted `Types.idr` in the MANIFEST
 |===
