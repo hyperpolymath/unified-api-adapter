@@ -102,7 +102,7 @@ if [ -z "$LANGS" ] && [ "$DETECT" -eq 1 ]; then
     _l=()
     [ -n "$(_find Cargo.toml)" ]      && _l+=(rust)
     [ -n "$(_find '*.ipkg' 3)" ]      && _l+=(idris2)
-    [ -n "$(_find Project.toml 1)" ]  && _l+=(julia)
+    [ -n "$(_find Project.toml 3)" ]  && _l+=(julia)
     [ -n "$(_find build.zig 4)" ]     && _l+=(zig)
     [ -n "$(_find mix.exs)" ]         && _l+=(elixir)
     [ -n "$(_find gleam.toml)" ]      && _l+=(gleam)
@@ -120,7 +120,7 @@ if [ -z "$TOOLS" ] && [ "$DETECT" -eq 1 ]; then
     # declaring `erlang elixir` was failed for not declaring `mix`/`erl`, and a
     # Rust tree declaring `rust` was failed for declaring a tool the engine
     # installs. A mirror that disagrees with the engine is a bug in the mirror.
-    _t="just shellcheck trivy"
+    _t="just shellcheck yq trivy"
     for l in $LANGS; do
         case "$l" in
             rust)              _t="$_t rust" ;;
