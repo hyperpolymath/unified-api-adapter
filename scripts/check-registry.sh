@@ -18,11 +18,11 @@ done
 cp "$root/src/interface/RegistryCheck.idr" "$work/"
 (cd "$work"; sha256sum Abi/*.idr RegistryCheck.idr) > "$evidence/inputs.sha256"
 (cd "$work"; "$idris" --total -Werror --codegen refc -o registry-check RegistryCheck.idr) > "$evidence/build.log" 2>&1
-! grep -q '^Error:' "$evidence/build.log"
+if grep -q '^Error:' "$evidence/build.log"; then cat "$evidence/build.log" >&2; exit 1; fi
 test -x "$work/build/exec/registry-check"
 (cd "$work"; printf ':m\n:q\n' | "$idris" --no-banner RegistryCheck.idr) > "$evidence/holes.log" 2>&1
 grep -q 'No holes' "$evidence/holes.log"
-! grep -q '^Error:' "$evidence/holes.log"
+if grep -q '^Error:' "$evidence/holes.log"; then cat "$evidence/holes.log" >&2; exit 1; fi
 "$work/build/exec/registry-check" | tee "$evidence/registry.log"
 
 # Mutate the actual decoder: unknown values must not turn into REST.
