@@ -37,3 +37,5 @@ modules = Abi.Types
         , Abi.Protocol
         , Abi.Status
         , Abi.Dispatch
+        , Abi.ProtocolFinite
+        , Abi.Registry

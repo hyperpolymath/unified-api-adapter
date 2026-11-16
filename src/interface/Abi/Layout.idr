@@ -84,9 +84,10 @@ record StructLayout where
 
 ||| Proof that all fields in a struct are correctly aligned
 public export
-data FieldsAligned : Vect n Field -> Type where
+data FieldsAligned : {n : Nat} -> Vect n Field -> Type where
   NoFields : FieldsAligned []
   ConsField :
+    {n : Nat} ->
     (f : Field) ->
     (rest : Vect n Field) ->
     (0 prf : Divides f.alignment f.offset) ->

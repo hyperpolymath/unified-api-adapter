@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+set -euo pipefail
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+idris=${IDRIS2:-idris2}
+command -v "$idris" >/dev/null
+evidence=${EVIDENCE_DIR:-"$root/build/registry-evidence"}
+mkdir -p "$evidence"
+evidence=$(cd "$evidence" && pwd)
+rm -f "$evidence/result.txt"
+work=$(mktemp -d -t uapi-registry-check.XXXXXXXX)
+trap 'rm -rf -- "$work"' EXIT
+mkdir -p "$work/Abi"
+for module in Protocol ProtocolFinite Status Registry; do
+  cp "$root/src/interface/Abi/$module.idr" "$work/Abi/"
+done
+cp "$root/src/interface/RegistryCheck.idr" "$work/"
+(cd "$work"; sha256sum Abi/*.idr RegistryCheck.idr) > "$evidence/inputs.sha256"
+(cd "$work"; "$idris" --total -Werror --codegen refc -o registry-check RegistryCheck.idr) > "$evidence/build.log" 2>&1
+if grep -q '^Error:' "$evidence/build.log"; then cat "$evidence/build.log" >&2; exit 1; fi
+test -x "$work/build/exec/registry-check"
+(cd "$work"; printf ':m\n:q\n' | "$idris" --no-banner RegistryCheck.idr) > "$evidence/holes.log" 2>&1
+grep -q 'No holes' "$evidence/holes.log"
+if grep -q '^Error:' "$evidence/holes.log"; then cat "$evidence/holes.log" >&2; exit 1; fi
+"$work/build/exec/registry-check" | tee "$evidence/registry.log"
+
+# Mutate the actual decoder: unknown values must not turn into REST.
+sed -i 's/)))))))))) = Nothing/)))))))))) = Just REST/' "$work/Abi/ProtocolFinite.idr"
+if (cd "$work"; "$idris" --total -Werror --check Abi/ProtocolFinite.idr) > "$evidence/reject.log" 2>&1; then
+  # Idris versions that report errors with exit zero still fail this gate.
+  grep -q '^Error:' "$evidence/reject.log" || { echo 'FAIL: reverse-decoding proof accepted mutant' >&2; exit 1; }
+fi
+grep -q 'finiteDecodeSound' "$evidence/reject.log"
+{
+  "$idris" --version
+  cat "$evidence/inputs.sha256"
+} > "$evidence/identity.log"
+echo PASS > "$evidence/result.txt"
+printf 'PASS: total proof modules, no holes, executable matrix, rejecting decoder mutation.\nEvidence: %s\n' "$evidence"
