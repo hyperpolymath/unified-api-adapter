@@ -21,7 +21,7 @@ cp "$root/src/interface/ffi/test/registry_caller.c" "$work/caller.c"
 (cd "$work"; sha256sum registry.zig uaa_registry.h caller.c oracle.csv) > "$evidence/inputs.sha256"
 "$zig" version > "$evidence/zig-version.txt"
 build() {
-  "$zig" build-lib -dynamic -lc -O ReleaseSafe "$work/registry.zig" -femit-bin="$work/libuaa_registry.so"
+  "$zig" build-lib -dynamic -lc -O ReleaseSafe --name uaa_registry "$work/registry.zig" -femit-bin="$work/libuaa_registry.so"
   "$zig" cc -Wall -Wextra -Werror -I "$work" "$work/caller.c" -L "$work" -luaa_registry \
     -Wl,-rpath,"$work" -o "$work/caller"
 }
