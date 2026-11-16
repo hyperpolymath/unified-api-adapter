@@ -1,0 +1,55 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Decoder and registration boundary
+
+== Decision
+
+Keep the planned transport taxonomy in `Abi.Dispatch` for compatibility.
+Its `implemented` name describes planned REST/MCP routes, not live handlers.
+Use `Abi.Registry` for registration: a new registry is empty, an absent
+handler returns `Unsupported`, and an unknown byte tag returns `InvalidParam`.
+Successful lookup returns the registered endpoint itself. It makes no claim
+that the endpoint is reachable or that a request will succeed.
+
+`Abi.ProtocolFinite` separates the structural `Fin 256` model from primitive
+`Bits8` conversion. Both finite round-trip directions are total Idris proofs.
+Conversion uses `natToFin` and refuses failure; it contains no unchecked cast
+from an arbitrary integer to a finite index. A universal primitive conversion
+reflection theorem is still open.
+
+== Checked evidence
+
+Run `bash scripts/check-registry.sh` with Idris2
+`b6cbc25d5cd2ef2a250556266fd7b68dfc360f8b`. The script copies the four boundary
+modules into a clean directory, compiles them with `--total -Werror`, audits
+holes, then executes the actual RefC program over all 256 tags and four
+REST/MCP registration combinations. It also compares the original primitive
+decoder with the new finite wrapper for every byte. This is 1,024 executable
+cases, not a proof of the compiler or its primitive operations.
+
+The rejecting control changes unknown finite tags into REST. The named
+`finiteDecodeSound` proof must fail. Missing tools and setup failures cannot
+count as this successful rejection. CI runs the same script in
+`registry-boundary.yml`, without a private repository dependency.
+
+Named engineering proofs include `finiteRoundtrip`, `finiteDecodeSound`,
+`successHasRegistration`, `emptyRefuses`, `knownNeverInvalid` and
+`unknownTagRefused`. These are Idris proofs; no Agda, Lean or Rocq witness for
+this adapter model is claimed by this change.
+
+== Next implementation boundary
+
+. Provide an Agda-compatible generic partial-registry theory and its checked
+  Lean/Rocq witnesses. Prove replacement/revocation behavior explicitly;
+  registration is not a monotone reachability claim when entries can be removed.
+. Bind the actual Zig registration table to this Idris model. Handler pointers,
+  ownership, concurrency and registration lifetime need separate contracts.
+. Connect the real REST implementation from `developer-ecosystem/zig-api`.
+  Trace request failure, cancellation and buffer ownership. MCP is a separate
+  implementation and cannot become available merely by entering the taxonomy.
+. Extend Atoma's source model to the state/region operations actually used,
+  and reject stale source, ABI and registry receipts before claiming replay.
+
+The current Zig scaffold is not a registered transport runtime. This change
+front-loads the policy and decoder proof work; it does not announce a working
+network adapter or v1 readiness.

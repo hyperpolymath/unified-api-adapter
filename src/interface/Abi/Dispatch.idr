@@ -1,13 +1,10 @@
 -- SPDX-License-Identifier: MPL-2.0
 -- Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-||| Abi.Dispatch: which transport serves a protocol, and what happens when none
-||| does.
+||| Abi.Dispatch: the planned transport taxonomy, retained for compatibility.
 |||
-||| The adapter's rule: every protocol the ABI names either routes to a working
-||| transport or is refused with Unsupported. A tag that names no protocol is
-||| InvalidParam. Nothing is silently accepted, and the two refusals are never
-||| confused. The Zig runtime's transport table must agree with `route` on
-||| every tag (checked by its seam tests).
+||| A Right value names a planned route; it is not a registered handler or
+||| evidence of a working transport. Abi.Registry models actual registration
+||| separately and starts empty. Remote invocation remains a separate outcome.
 
 module Abi.Dispatch
 
@@ -17,13 +14,13 @@ import Data.List
 
 %default total
 
-||| The transports the runtime implements.
+||| The planned transport kinds.
 public export
 data Transport
-  = ViaRest  -- HTTP/1.1 JSON (moved from developer-ecosystem/zig-api connector.zig)
+  = ViaRest  -- HTTP/1.1 JSON (migration from developer-ecosystem/zig-api is pending)
   | ViaMcp   -- MCP JSON-RPC, over HTTP or stdio
 
-||| Does a transport exist for this protocol?
+||| Legacy name: is this protocol in the planned transport taxonomy?
 public export
 implemented : ProtocolType -> Bool
 implemented REST = True
@@ -122,8 +119,7 @@ public export
 routeTagZero : routeTag 0 = Left InvalidParam
 routeTagZero = Refl
 
-||| Census: exactly MCP and REST have transports today. Changing the set of
-||| implemented protocols breaks this line, so the change is visible in review.
+||| Census of planned routes, not evidence that handlers exist today.
 public export
 implementedCensus : filter Abi.Dispatch.implemented Abi.Protocol.allProtocols = [MCP, REST]
 implementedCensus = Refl

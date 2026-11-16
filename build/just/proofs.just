@@ -21,6 +21,7 @@ proof-check-all: proof-check-idris2 proof-check-lean4 proof-check-agda proof-che
 # Check Idris2 proofs (per MANIFEST; fatal if idris2 absent)
 proof-check-idris2:
     @bash scripts/check-proofs.sh idris2
+    @bash scripts/check-registry.sh
 
 # Check Lean4 proofs (per MANIFEST; fatal if lean absent)
 proof-check-lean4:

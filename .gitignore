@@ -146,3 +146,5 @@ verification/proofs/coq/.*.aux
 # Agda compiled proof artifacts
 verification/proofs/agda/*.agdai
 
+# Local registry gate evidence; CI uploads it as an artifact.
+/build/registry-evidence/
