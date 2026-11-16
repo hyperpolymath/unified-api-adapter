@@ -1,0 +1,53 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Runtime registration boundary
+
+The first executable registry exposes an opaque C handle, registration,
+unregistration and synchronous invocation. Only REST (9) and MCP (1) have
+slots. Other named protocols return Unsupported (11); unknown tags return
+InvalidParam (2). Duplicate registration refuses without replacing the original
+endpoint. A callback's return value is propagated only if it is a named status.
+An unknown callback status becomes ProcessFailed (6).
+
+This is a registry of caller-supplied handlers. No built-in REST or MCP network
+transport is available yet. Callback success is its report, not evidence of
+delivery. The older template functions are separate and do not implement this
+contract. Build the production library and header with `zig build` in
+`src/interface/ffi` using Zig 0.15.2.
+
+== Ownership and lifetime
+
+The owner serializes every operation on a handle, holds callback code and its
+context alive until unregister/destroy, supplies a readable input region for
+the entire call, and destroys the handle exactly once. Input is never retained.
+Null input is accepted only at length zero. Reentrant calls, mutation and
+destruction during a callback refuse; no registry pointer is exposed to the
+callback unless its owner deliberately supplies one in the context.
+
+The runtime does not prove arbitrary foreign-pointer validity, concurrent
+access safety, callback termination or recovery from a callback that unwinds
+across the C ABI. These are explicit preconditions and future qualification
+work, not properties inferred from the finite decoder proof.
+
+== Evidence and source-to-proof obligations
+
+The hosted registry workflow compiles the actual Idris model with RefC and
+compares its 1,024 observations with a separately compiled C caller linked to
+the actual Zig shared library. Observations include both status and endpoint
+identity, so selecting the wrong registered slot cannot pass by returning zero.
+The caller also exercises duplicate registration, unregister/re-register,
+raw bytes, null spans, callback failure, invalid callback status and reentrancy.
+An unknown-tag mutation must compile and then fail the executable check.
+
+The evidence directory records source identities and both matrices. A passing
+matrix is finite differential execution, not an Atoma source-refinement proof.
+The Idris registration theorem applies to its model. Still required: source
+binding for Zig dispatch, preservation under registry updates, region/lifetime
+semantics, and a transport-specific implementation/proof contract. Extend the
+Agda-compatible boundary first; independently replay supported witness claims
+in Lean and Rocq before qualifying the stronger Cubical profile.
+
+Next: a real REST handler with bounded response storage and explicit timeout,
+connection and HTTP failure outcomes, exercised against a local test server in
+remote CI. MCP follows with its own framing/session obligations. Neither route
+may report availability merely because its protocol has a name.

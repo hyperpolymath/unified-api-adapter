@@ -14,6 +14,19 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const registry = b.addLibrary(.{
+        .name = "uaa_registry",
+        .linkage = .dynamic,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/registry.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        }),
+    });
+    b.installArtifact(registry);
+    b.installFile("include/uaa_registry.h", "include/uaa_registry.h");
+
     const test_step = b.step("test", "Run the FFI unit and integration tests");
     for ([_][]const u8{ "src/main.zig", "test/integration_test.zig" }) |path| {
         const t = b.addTest(.{
