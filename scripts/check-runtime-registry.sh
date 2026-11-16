@@ -4,17 +4,20 @@
 set -euo pipefail
 unset CDPATH
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-zig=$(command -v "${ZIG:-zig}")
-zig=$(cd "$(dirname "$zig")" && pwd)/$(basename "$zig")
-test "$("$zig" version)" = 0.15.2
 evidence="$root/build/runtime-registry-evidence"
 mkdir -p "$evidence"
 echo INCOMPLETE > "$evidence/result.txt"
 work=$(mktemp -d -t uaa-runtime-registry.XXXXXXXX)
 trap 'status=$?; rm -rf -- "$work"; if ((status)); then echo FAIL > "$evidence/result.txt"; fi' EXIT
-# Rebuild the Idris oracle in this invocation: a prior PASS cannot rescue it.
-bash "$root/scripts/check-registry.sh" > "$evidence/idris.log" 2>&1
-cp "$root/build/registry-evidence/idris-oracle.csv" "$work/oracle.csv"
+zig=$(command -v "${ZIG:-zig}")
+zig=$(cd "$(dirname "$zig")" && pwd)/$(basename "$zig")
+test "$("$zig" version)" = 0.15.2
+# Rebuild and consume the oracle in the same private directory. An inherited
+# EVIDENCE_DIR or a stale default oracle must not change the inputs to this run.
+EVIDENCE_DIR="$work/idris-evidence" bash "$root/scripts/check-registry.sh" > "$evidence/idris.log" 2>&1
+test "$(cat "$work/idris-evidence/result.txt")" = PASS
+cp "$work/idris-evidence/idris-oracle.csv" "$work/oracle.csv"
+cp -R "$work/idris-evidence" "$evidence/"
 mkdir -p "$work/src" "$work/include" "$work/test"
 cp "$root/src/interface/ffi/build.zig" "$work/"
 cp "$root/src/interface/ffi/src/registry.zig" "$work/src/"

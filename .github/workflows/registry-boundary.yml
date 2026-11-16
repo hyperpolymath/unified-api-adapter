@@ -52,7 +52,11 @@ jobs:
           tar -xf zig.tar.xz
           echo "$RUNNER_TEMP/zig-x86_64-linux-0.15.2" >> "$GITHUB_PATH"
       - name: Total proofs and actual C ABI differential execution
-        run: bash scripts/check-runtime-registry.sh
+        run: |
+          set -euo pipefail
+          # An inherited producer override must not select an old oracle.
+          EVIDENCE_DIR="$RUNNER_TEMP/unused-oracle" bash scripts/check-runtime-registry.sh
+          test ! -e "$RUNNER_TEMP/unused-oracle"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:

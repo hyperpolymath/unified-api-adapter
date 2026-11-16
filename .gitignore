@@ -148,3 +148,4 @@ verification/proofs/agda/*.agdai
 
 # Local registry gate evidence; CI uploads it as an artifact.
 /build/registry-evidence/
+/build/runtime-registry-evidence/

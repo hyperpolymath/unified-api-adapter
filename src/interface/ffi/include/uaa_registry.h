@@ -15,7 +15,9 @@ typedef int (*uaa_callback)(void *context, const uint8_t *bytes, size_t len);
  * No pointers are retained from an invocation. Callbacks must not unwind across
  * the C ABI. Mutation, recursion and destruction during a callback return 6.
  * Status codes are Abi.Status: 0 success, 2 unknown tag, 4 null argument,
- * 6 invocation failure, 8 absent registration, 9 duplicate, 11 unsupported.
+ * 6 invocation failure/reentrancy, 9 duplicate registration, 11 unsupported.
+ * Unregister returns 8 for an empty slot. Call returns 11 for an unregistered
+ * REST/MCP slot (or another known, unsupported protocol).
  * Success from call is the callback's report, not proof of remote delivery.
  */
 uaa_registry *uaa_registry_create(void);
