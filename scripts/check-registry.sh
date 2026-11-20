@@ -24,6 +24,8 @@ test -x "$work/build/exec/registry-check"
 grep -q 'No holes' "$evidence/holes.log"
 if grep -q '^Error:' "$evidence/holes.log"; then cat "$evidence/holes.log" >&2; exit 1; fi
 "$work/build/exec/registry-check" | tee "$evidence/registry.log"
+grep '^case,' "$evidence/registry.log" > "$evidence/idris-oracle.csv"
+test "$(wc -l < "$evidence/idris-oracle.csv")" -eq 1024
 
 # Mutate the actual decoder: unknown values must not turn into REST.
 sed -i 's/)))))))))) = Nothing/)))))))))) = Just REST/' "$work/Abi/ProtocolFinite.idr"
