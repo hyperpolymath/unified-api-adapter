@@ -68,3 +68,18 @@ jobs:
             build/runtime-registry-evidence/
           if-no-files-found: error
 
+  gate:
+    name: CI/gate
+    needs: [registry]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require completed registry boundary evidence
+        env:
+          REGISTRY_RESULT: ${{ needs.registry.result }}
+        run: |
+          if [ "$REGISTRY_RESULT" != success ]; then
+            echo "::error::Registry boundary did not pass: $REGISTRY_RESULT"
+            exit 1
+          fi

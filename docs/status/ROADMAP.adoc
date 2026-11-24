@@ -11,7 +11,8 @@ link:../decisions/2026-11-16-registration-boundary.adoc[registration boundary]
 for the evidence and limits. The follow-up
 link:../decisions/2026-11-16-runtime-registry.adoc[runtime registry] adds a real
 Zig shared library and C caller with a 1,024-row Idris differential gate.
-Its current PR must pass hosted CI before qualification. Built-in REST/MCP
+Its current PR must pass hosted CI before qualification. The required
+`CI/gate` depends on the registry job and fails on failure, cancellation or skip. Built-in REST/MCP
 network transports and source/compiler refinement remain pending.
 
 == Milestones
