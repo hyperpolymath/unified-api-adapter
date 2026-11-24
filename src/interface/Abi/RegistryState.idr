@@ -77,7 +77,7 @@ busyUnregisterRefuses : (slot : Slot) -> (r : Registry endpoint) ->
 busyUnregisterRefuses slot r = Refl
 
 public export
-duplicateRegisterFrames : (slot : Slot) -> (e old : endpoint) -> (r : Registry endpoint) ->
+duplicateRegisterFrames : (slot : Slot) -> (e : endpoint) -> (old : endpoint) -> (r : Registry endpoint) ->
   lookup slot r = Just old ->
   register slot e (MkState r False) = MkReply AlreadyExists (MkState r False)
 duplicateRegisterFrames slot e old r found = rewrite found in Refl
