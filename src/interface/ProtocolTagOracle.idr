@@ -1,7 +1,9 @@
 -- SPDX-License-Identifier: MPL-2.0
 -- Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 module Main
+import Abi.Protocol
 import Abi.ProtocolFinite
+import Data.Fin
 %default total
 
 present : Bits8 -> Nat
