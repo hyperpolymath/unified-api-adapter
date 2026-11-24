@@ -11,8 +11,12 @@ The total module proves selected-slot replacement, preservation of the other
 slot, busy registration/unregistration refusal, duplicate/absent refusal
 framing, exact selected endpoint identity, reentrant call refusal, and endpoint
 frame restoration on normal callback return. The existing 1,024-case native
-ABI differential campaign remains mandatory. These theorems are development
-work until their fresh hosted totality/no-hole check passes.
+ABI differential campaign remains mandatory. Hosted run
+https://github.com/hyperpolymath/unified-api-adapter/actions/runs/45510851199[45510851199]
+checked commit `d54b8a3bdb305c63e38f911d32a2fa1b3c3e5881`: the fresh Idris2
+totality check and no-hole query passed, alongside the native ABI campaign,
+lifetime/reentrancy controls and rejection mutant. This validates the model
+and the recorded executable tests, not the pending implementation correspondence.
 
 == Ownership assumptions
 
