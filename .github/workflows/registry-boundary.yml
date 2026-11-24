@@ -43,11 +43,43 @@ jobs:
           make install
       - name: Add Idris to PATH
         run: echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
-      - name: Total proofs, all tag/registry combinations and rejecting mutant
-        run: bash scripts/check-registry.sh
+      - name: Provision pinned Zig for the actual C ABI caller
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl --proto '=https' --proto-redir '=https' --connect-timeout 20 --max-time 120 -fL https://zigmirror.hryx.net/zig/zig-x86_64-linux-0.15.2.tar.xz -o zig.tar.xz || \
+            curl --proto '=https' --proto-redir '=https' --connect-timeout 20 --max-time 120 -fL https://zig.linus.dev/zig/zig-x86_64-linux-0.15.2.tar.xz -o zig.tar.xz || \
+            curl --proto '=https' --proto-redir '=https' --connect-timeout 20 --max-time 120 -fL https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz -o zig.tar.xz
+          echo '02aa270f183da276e5b5920b1dac44a63f1a49e55050ebde3aecc9eb82f93239  zig.tar.xz' | sha256sum -c -
+          tar -xf zig.tar.xz
+          echo "$RUNNER_TEMP/zig-x86_64-linux-0.15.2" >> "$GITHUB_PATH"
+      - name: Total proofs and actual C ABI differential execution
+        run: |
+          set -euo pipefail
+          # An inherited producer override must not select an old oracle.
+          EVIDENCE_DIR="$RUNNER_TEMP/unused-oracle" bash scripts/check-runtime-registry.sh
+          test ! -e "$RUNNER_TEMP/unused-oracle"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: registry-boundary-evidence
-          path: build/registry-evidence/
+          path: |
+            build/registry-evidence/
+            build/runtime-registry-evidence/
           if-no-files-found: error
+
+  gate:
+    name: CI/gate
+    needs: [registry]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require completed registry boundary evidence
+        env:
+          REGISTRY_RESULT: ${{ needs.registry.result }}
+        run: |
+          if [ "$REGISTRY_RESULT" != success ]; then
+            echo "::error::Registry boundary did not pass: $REGISTRY_RESULT"
+            exit 1
+          fi

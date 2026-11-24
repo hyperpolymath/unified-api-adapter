@@ -16,7 +16,8 @@ for module in Protocol ProtocolFinite Status Registry; do
   cp "$root/src/interface/Abi/$module.idr" "$work/Abi/"
 done
 cp "$root/src/interface/RegistryCheck.idr" "$work/"
-(cd "$work"; sha256sum Abi/*.idr RegistryCheck.idr) > "$evidence/inputs.sha256"
+cp "$root/src/interface/ProtocolTagOracle.idr" "$work/Main.idr"
+(cd "$work"; sha256sum Abi/*.idr RegistryCheck.idr Main.idr) > "$evidence/inputs.sha256"
 (cd "$work"; "$idris" --total -Werror --codegen refc -o registry-check RegistryCheck.idr) > "$evidence/build.log" 2>&1
 if grep -q '^Error:' "$evidence/build.log"; then cat "$evidence/build.log" >&2; exit 1; fi
 test -x "$work/build/exec/registry-check"
@@ -24,6 +25,19 @@ test -x "$work/build/exec/registry-check"
 grep -q 'No holes' "$evidence/holes.log"
 if grep -q '^Error:' "$evidence/holes.log"; then cat "$evidence/holes.log" >&2; exit 1; fi
 "$work/build/exec/registry-check" | tee "$evidence/registry.log"
+grep '^case,' "$evidence/registry.log" > "$evidence/idris-oracle.csv"
+test "$(wc -l < "$evidence/idris-oracle.csv")" -eq 1024
+
+# The scalar oracle consumes the authoritative decoder in the same fresh profile.
+(cd "$work"; "$idris" --total -Werror --codegen refc -o tag-oracle Main.idr) > "$evidence/tag-build.log" 2>&1
+if grep -q '^Error:' "$evidence/tag-build.log"; then cat "$evidence/tag-build.log" >&2; exit 1; fi
+test -x "$work/build/exec/tag-oracle"
+(cd "$work"; printf ':m\n:q\n' | "$idris" --no-banner Main.idr) > "$evidence/tag-holes.log" 2>&1
+grep -q 'No holes' "$evidence/tag-holes.log"
+if grep -q '^Error:' "$evidence/tag-holes.log"; then cat "$evidence/tag-holes.log" >&2; exit 1; fi
+"$work/build/exec/tag-oracle" > "$evidence/tag-oracle.tsv"
+awk 'NF != 2 || $1 != NR-1 || $2 != (NR >= 2 && NR <= 10 ? 1 : 0) {exit 1}
+     END {if (NR != 256) exit 1}' "$evidence/tag-oracle.tsv"
 
 # Mutate the actual decoder: unknown values must not turn into REST.
 sed -i 's/)))))))))) = Nothing/)))))))))) = Just REST/' "$work/Abi/ProtocolFinite.idr"
@@ -38,3 +52,4 @@ grep -q 'finiteDecodeSound' "$evidence/reject.log"
 } > "$evidence/identity.log"
 echo PASS > "$evidence/result.txt"
 printf 'PASS: total proof modules, no holes, executable matrix, rejecting decoder mutation.\nEvidence: %s\n' "$evidence"
+

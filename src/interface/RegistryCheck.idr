@@ -6,6 +6,8 @@ import Abi.ProtocolFinite
 import Abi.Registry
 import Abi.Status
 import System
+import Data.List
+import Data.String
 
 %default total
 
@@ -28,7 +30,17 @@ check rest mcp n =
   in observe (dispatchTag r tag) == expected rest mcp n &&
      map protocolTag (protocolFromWire tag) == map protocolTag (protocolFromTag tag)
 
+row : Bool -> Bool -> Nat -> String
+row rest mcp n =
+  let r = MkRegistry (if rest then Just 9 else Nothing)
+                     (if mcp then Just 1 else Nothing)
+      (status, endpoint) = observe (dispatchTag r (cast n))
+      mask : Nat = (if rest then 1 else 0) + (if mcp then 2 else 0)
+  in "case," ++ show mask ++ "," ++ show n ++ "," ++ show status ++ "," ++ show endpoint
+
 main : IO ()
 main = if all (\rest => all (\mcp => all (check rest mcp) [0..255]) [False, True]) [False, True]
-       then putStrLn "PASS: all 256 tags x four registration states; original decoder agrees"
+       then do
+         putStr (unlines (concatMap (\rest => concatMap (\mcp => map (row rest mcp) [0..255]) [False, True]) [False, True]))
+         putStrLn "PASS: all 256 tags x four registration states; original decoder agrees"
        else die "FAIL: registry, status or primitive decoder disagreement"

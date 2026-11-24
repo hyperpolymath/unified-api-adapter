@@ -23,26 +23,29 @@ image:https://img.shields.io/badge/Zig-Zero--overhead-F7A41D?logo=zig&logoColor=
 image:https://api.thegreenwebfoundation.org/greencheckimage/github.com[Green Web,link="https://www.thegreenwebfoundation.org/green-web-check/?url=github.com"]
 
 
-One C ABI for every estate service protocol. A caller links this library and
-picks a transport by protocol tag, instead of each service re-rolling its own
-HTTP or MCP client.
+An Idris2-defined ABI with pure Zig FFI and API implementations for estate
+service protocols. The current shared library dispatches synchronous calls to
+caller-supplied REST and MCP callbacks through C-compatible declarations.
 
 [IMPORTANT]
 ====
-*Status: minted, no adapter code yet.* This repository was initialised from
-`rsr-template-repo` on 2026-11-05. The adapter itself lands in the pull requests
-that follow, in the order given under <<plan>>. Nothing below is a claim that the
-code exists until those land.
+*Status: experimental callback registry implemented.* The Zig shared library
+supports registration, calls, unregistration and destruction, with explicit
+refusals for unsupported tags and invalid state. Hosted checks compare 1,024
+runtime cases with a fresh Idris2 oracle and exercise lifetime/reentrancy
+contracts. Built-in HTTP/MCP clients and complete source-to-boundary refinement
+remain open. See <<plan>> for the distinction between current and planned work.
 ====
 
 == What this is
 
-Two things already exist in the estate and are joined here:
+This adapter connects two parts of the estate; connector-pool integration is
+still planned:
 
 * the *protocol taxonomy* from `boj-server` (`Boj.Protocol`): nine wire
   protocols (MCP, LSP, DAP, BSP, NeSy, Agentic, Fleet, gRPC, REST) with an
   Idris2-proven tag encoding (mirrored in Zig and seam-tested in `boj-server`;
-  here the Idris2 side exists and the Zig side is still to come);
+  here both the Idris2 model and Zig runtime classifier exist);
 * the *HTTP connector pool* from `developer-ecosystem/zig-api`
   (`connector.zig`, `uapi_connector_*`), the only one of those protocols with a
   working client today.
@@ -51,9 +54,10 @@ In `boj-server` the taxonomy is a column of the cartridge catalogue: it records
 which protocols a cartridge exposes, and nothing routes a call by it. This
 adapter makes it a dispatch table.
 
-The design rule: *every protocol the ABI names either works or refuses.* A
-call on a protocol with no transport returns `UAPI_ERR_UNSUPPORTED`. It is
-never silently accepted.
+The design rule: *every protocol the ABI names either works or refuses.* The
+current registry supports caller-supplied REST/MCP handlers; other known tags
+refuse. See the installed `uaa_registry.h` for operation-specific status values.
+A successful callback does not establish remote delivery.
 
 [[plan]]
 == Layers and plan
@@ -68,14 +72,14 @@ never silently accepted.
 | `boj-server` `Boj.Protocol`, `zig-api` `ZigApi.ABI.Connector`
 
 | Zig runtime (`src/interface/ffi/`)
-| Transport table indexed by protocol tag. REST: the `zig-api` connector,
-  moved, not rewritten. MCP: a new JSON-RPC client over HTTP and stdio. The
-  other seven protocols are declared and refuse.
+| Implemented: synchronous borrowed callback registry for REST/MCP; other tags
+  refuse. Planned: integrate the REST connector and add MCP HTTP/stdio clients.
 | `zig-api` `connector.zig`, `core.zig`; MCP is new
 
-| C header (`src/interface/generated/abi/`)
-| Generated from the Idris2 ABI; never edited by hand
-| —
+| Foreign declarations (`src/interface/ffi/include/uaa_registry.h`)
+| Implemented C-compatible declarations for the Zig runtime. Full mechanical
+  generation and correspondence with Idris2 remain proof obligations.
+| Idris2 ABI contracts; Zig implementation
 |===
 
 Once the adapter is published, `developer-ecosystem/zig-api` and `boj-server`
@@ -87,10 +91,13 @@ Proof obligations follow the estate proof policy
 (`standards/3-practice/PROOF-POLICY.adoc`): Idris2 for the ABI, Kani for the
 `unsafe` and FFI seams of Rust callers.
 
-*Proofs:* 10 proven of 15; 4 open, 1 argued, all named in
-link:docs/EXPLAINME.adoc#proof-ledger[the proof ledger]. Proven means proven
-for the Idris2 model; the Zig runtime and the C boundary are open rows, and
-agreement with `boj-server`'s taxonomy is argued.
+*Proof scope:* see link:docs/EXPLAINME.adoc#proof-ledger[the proof ledger].
+Idris2 model proofs, exhaustive native checks and Atoma's closed scalar source
+interpretation are distinct evidence. The scalar classifier is checked over
+all 256 byte tags against the Idris2 decoder; compiler refinement, pointer
+provenance and the stateful callback boundary remain open. Consumers must
+serialize access, retain borrowed callback/context lifetimes and destroy each
+live handle exactly once.
 
 == Where to go next
 

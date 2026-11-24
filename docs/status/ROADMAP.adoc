@@ -8,8 +8,12 @@ Initial development phase. The finite decoder and partial registration model
 now have total Idris proofs and an executable RefC matrix covering all 256 tags
 and four registration states. See
 link:../decisions/2026-11-16-registration-boundary.adoc[registration boundary]
-for the evidence and limits. Actual Zig registration and transport invocation
-remain pending; planned REST/MCP routes do not establish availability.
+for the evidence and limits. The follow-up
+link:../decisions/2026-11-16-runtime-registry.adoc[runtime registry] adds a real
+Zig shared library and C caller with a 1,024-row Idris differential gate.
+Its current PR must pass hosted CI before qualification. The required
+`CI/gate` depends on the registry job and fails on failure, cancellation or skip. Built-in REST/MCP
+network transports and source/compiler refinement remain pending.
 
 == Milestones
 
