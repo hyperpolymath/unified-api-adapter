@@ -3,6 +3,7 @@
 // Executable consumer of Abi.Registry. Differential execution is evidence,
 // not a source/compiler refinement proof or a built-in network transport.
 const std = @import("std");
+const known = @import("protocol_tag.zig").known;
 
 pub const Callback = *const fn (?*anyopaque, ?[*]const u8, usize) callconv(.c) c_int;
 const Endpoint = struct { callback: Callback, context: ?*anyopaque };
@@ -11,10 +12,6 @@ pub const Registry = struct {
     mcp: ?Endpoint = null,
     active: bool = false,
 };
-
-fn known(tag: u8) bool {
-    return tag >= 1 and tag <= 9;
-}
 
 // All calls on one live registry must be serialized by its owner. Callback
 // code/context and input remain borrowed for the synchronous call only.

@@ -21,6 +21,7 @@ cp -R "$work/idris-evidence" "$evidence/"
 mkdir -p "$work/src" "$work/include" "$work/test"
 cp "$root/src/interface/ffi/build.zig" "$work/"
 cp "$root/src/interface/ffi/src/registry.zig" "$work/src/"
+cp "$root/src/interface/ffi/src/protocol_tag.zig" "$work/src/"
 cp "$root/src/interface/ffi/src/main.zig" "$work/src/"
 cp "$root/src/interface/ffi/include/uaa_registry.h" "$work/include/"
 cp "$root/src/interface/ffi/test/registry_caller.c" "$work/test/"
@@ -46,3 +47,4 @@ if "$work/caller" > "$evidence/mutant.csv" 2> "$evidence/mutant.log"; then
 fi
 echo PASS > "$evidence/result.txt"
 echo 'PASS: real C ABI, Idris differential matrix, lifetime/refusal regressions and rejecting Zig mutant'
+
