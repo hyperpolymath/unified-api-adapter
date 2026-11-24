@@ -15,7 +15,10 @@ mkdir -p "$work/Abi"
 for module in Protocol ProtocolFinite Status Registry RegistryState; do
   cp "$root/src/interface/Abi/$module.idr" "$work/Abi/"
 done
-(cd "$work"; "$idris" --total -Werror --check Abi/RegistryState.idr) > "$evidence/state-build.log" 2>&1
+if ! (cd "$work"; "$idris" --total -Werror --check Abi/RegistryState.idr) > "$evidence/state-build.log" 2>&1; then
+  cat "$evidence/state-build.log" >&2
+  exit 1
+fi
 if grep -q '^Error:' "$evidence/state-build.log"; then cat "$evidence/state-build.log" >&2; exit 1; fi
 (cd "$work"; printf ':m\n:q\n' | "$idris" --no-banner Abi/RegistryState.idr) > "$evidence/state-holes.log" 2>&1
 grep -q 'No holes' "$evidence/state-holes.log"

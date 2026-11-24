@@ -8,7 +8,14 @@ evidence="$root/build/runtime-registry-evidence"
 mkdir -p "$evidence"
 echo INCOMPLETE > "$evidence/result.txt"
 work=$(mktemp -d -t uaa-runtime-registry.XXXXXXXX)
-trap 'status=$?; rm -rf -- "$work"; if ((status)); then echo FAIL > "$evidence/result.txt"; fi' EXIT
+finish() {
+  local status=$?
+  # Preserve a failed fresh oracle's diagnostics before deleting its directory.
+  if [[ -d "$work/idris-evidence" ]]; then cp -R "$work/idris-evidence" "$evidence/"; fi
+  rm -rf -- "$work"
+  if ((status)); then echo FAIL > "$evidence/result.txt"; fi
+}
+trap finish EXIT
 zig=$(command -v "${ZIG:-zig}")
 zig=$(cd "$(dirname "$zig")" && pwd)/$(basename "$zig")
 test "$("$zig" version)" = 0.15.2
@@ -47,4 +54,3 @@ if "$work/caller" > "$evidence/mutant.csv" 2> "$evidence/mutant.log"; then
 fi
 echo PASS > "$evidence/result.txt"
 echo 'PASS: real C ABI, Idris differential matrix, lifetime/refusal regressions and rejecting Zig mutant'
-
