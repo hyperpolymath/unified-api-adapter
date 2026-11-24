@@ -1,0 +1,37 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Registry state and ownership proof boundary
+
+The executable FFI/API remains pure Zig. `Abi.RegistryState` develops the
+authoritative Idris2 transition contract alongside the existing registry and
+protocol contracts. Each endpoint is one value containing callback/context
+identity, not merely a Boolean registration flag.
+
+The total module proves selected-slot replacement, preservation of the other
+slot, busy registration/unregistration refusal, duplicate/absent refusal
+framing, exact selected endpoint identity, reentrant call refusal, and endpoint
+frame restoration on normal callback return. The existing 1,024-case native
+ABI differential campaign remains mandatory. Hosted run
+https://github.com/hyperpolymath/unified-api-adapter/actions/runs/45510851199[45510851199]
+checked commit `d54b8a3bdb305c63e38f911d32a2fa1b3c3e5881`: the fresh Idris2
+totality check and no-hole query passed, alongside the native ABI campaign,
+lifetime/reentrancy controls and rejection mutant. This validates the model
+and the recorded executable tests, not the pending implementation correspondence.
+
+== Ownership assumptions
+
+The caller owns a live registry exclusively and serializes access. Registered
+callback code and context remain live until unregister/destroy, and throughout
+any synchronous callback. Input bytes remain readable for the callback's
+duration. Foreign code must not mutate registry memory through raw aliases.
+
+An `Invocation` is an ordinary logical snapshot, not an unforgeable runtime
+capability and not a linear ownership proof. Busy restoration applies when the
+callback returns normally; it establishes neither termination nor safe
+non-local jumps, arbitrary foreign corruption, unwinding, or concurrent calls.
+
+Pending implementation correspondence: connect every Zig state transition to
+these Idris definitions, bind imported helpers/source bytes, and validate
+lease/provenance rules for actual handles and borrowed buffers. Agda then
+Lean/Coq state-model witnesses and independent replay must precede any broader
+proof claim. No Mathesis admission or proof grade is asserted here.

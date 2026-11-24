@@ -12,9 +12,17 @@ rm -f "$evidence/result.txt"
 work=$(mktemp -d -t uapi-registry-check.XXXXXXXX)
 trap 'rm -rf -- "$work"' EXIT
 mkdir -p "$work/Abi"
-for module in Protocol ProtocolFinite Status Registry; do
+for module in Protocol ProtocolFinite Status Registry RegistryState; do
   cp "$root/src/interface/Abi/$module.idr" "$work/Abi/"
 done
+if ! (cd "$work"; "$idris" --total -Werror --check Abi/RegistryState.idr) > "$evidence/state-build.log" 2>&1; then
+  cat "$evidence/state-build.log" >&2
+  exit 1
+fi
+if grep -q '^Error:' "$evidence/state-build.log"; then cat "$evidence/state-build.log" >&2; exit 1; fi
+(cd "$work"; printf ':m\n:q\n' | "$idris" --no-banner Abi/RegistryState.idr) > "$evidence/state-holes.log" 2>&1
+grep -q 'No holes' "$evidence/state-holes.log"
+if grep -q '^Error:' "$evidence/state-holes.log"; then cat "$evidence/state-holes.log" >&2; exit 1; fi
 cp "$root/src/interface/RegistryCheck.idr" "$work/"
 cp "$root/src/interface/ProtocolTagOracle.idr" "$work/Main.idr"
 (cd "$work"; sha256sum Abi/*.idr RegistryCheck.idr Main.idr) > "$evidence/inputs.sha256"
@@ -52,4 +60,3 @@ grep -q 'finiteDecodeSound' "$evidence/reject.log"
 } > "$evidence/identity.log"
 echo PASS > "$evidence/result.txt"
 printf 'PASS: total proof modules, no holes, executable matrix, rejecting decoder mutation.\nEvidence: %s\n' "$evidence"
-
