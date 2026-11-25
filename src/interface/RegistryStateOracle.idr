@@ -2,6 +2,7 @@
 module Main
 import Abi.Registry
 import Abi.RegistryState
+import Abi.RegistryOwnership
 import Abi.Status
 %default total
 
@@ -51,4 +52,3 @@ main = do
               putStrLn (render first ++ " " ++ render second)
   for_ [-2147483648,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,256,2147483647] $ \z =>
     putStrLn ("status " ++ show z ++ " " ++ show (statusTag (sanitize z)))
-
