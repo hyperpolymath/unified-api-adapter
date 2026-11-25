@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Registry retention and synchronous input loans
+:revdate: 2026-11-25
+
+Successful registration stores callback/context identities until that slot is
+unregistered or the idle registry is destroyed. The caller must keep both valid
+through that interval. Input memory is borrowed only during a synchronous call.
+Unregister and destroy do not own or free callback code or context storage.
+Two installed slots sharing one context retain two references; removing one
+does not make the remaining registration safe after the context is freed.
+
+`Abi.RegistryLifetime.Permit resource retained readers` records these obligations
+in a hidden-constructor linear caller contract. Retain/dropRetention and
+borrowRead/returnRead adjust separate counts. Release consumes a finalizer and a
+permit with both counts zero. The Idris negative controls try to release a
+retained or borrowed permit and must be rejected. The destroy decision mirrors
+the actual idle/busy branches: busy destruction refuses; idle destruction
+detaches every registration, including registrations not individually removed.
+
+The counts are ghost permissions. They are not fields or checks in the Zig ABI.
+Acquiring a permit does not prove that a supplied pointer is live or exclusive,
+and foreign callers can violate the contract. No stale pointer is passed to the
+native fixture: checking arbitrary address bits by dereferencing them is unsafe.
+The existing raw-alias counterexample remains part of ownership qualification.
+
+`RegistryLifetimeTests.zig` imports the actual registry implementation. It tests
+shared-context registration, removal of one slot while the other remains
+callable, busy destroy/call/register/unregister refusal, repeated detach refusal,
+and caller-owned context survival after idle registry destruction. It runs in
+four Zig modes. Three compiled mutations must fail for the intended assertions:
+incorrect busy-destroy status, failure to detach, and destruction of the other
+slot during detach. A zero-exit compiler-error control must also be rejected.
+Inputs are hashed before copying, the private copies checked against that
+manifest, and both copies/originals rechecked before PASS.
+
+The source-bound heap interpretation belongs to the companion Atoma change and
+requires its own receipts. Valid registry allocation, serialized owner access,
+correct allocator/compiler behaviour, readable immutable input, valid retained
+callback/context and normal frame-preserving return remain explicit premises.
+No ABI signature, calling convention or allocation API changes in this slice.
+All new FFI/API fixtures use Zig; contracts remain Idris2. Hosted CI qualification
+is required before acceptance; file presence is not a proof or a PWG promotion.
