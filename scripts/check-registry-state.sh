@@ -11,7 +11,7 @@ trap 'status=$?; if ((status)); then echo FAIL > "$out/result.txt"; tail -n 35 "
 [[ $(zig version) == 0.15.2 ]]
 cp -R "$root/src/interface/Abi" "$work/"
 cp "$root/src/interface/RegistryStateOracle.idr" "$work/Main.idr"
-cp "$root/src/interface/ffi/test/registry_state_runner.zig" "$work/runner.zig"
+cp "$root/src/interface/RegistryStateRunner.zig" "$work/runner.zig"
 cp "$root/src/interface/ffi/src/registry_state.zig" "$work/"
 (cd "$work"; sha256sum Main.idr Abi/*.idr *.zig) > "$out/inputs.sha256"
 (cd "$work"; idris2 --total -Werror --codegen refc -o oracle Main.idr) > "$out/idris-build.txt" 2>&1
