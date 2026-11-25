@@ -11,28 +11,36 @@ import Abi.RegistryState
 public export
 data Phase = Idle | Calling | Released
 
-public export
+export
 data Lease : Type -> Phase -> Type where
-  IdleLease : Registry endpoint -> Lease endpoint Idle
-  CallingLease : Registry endpoint -> Lease endpoint Calling
-  ReleasedLease : Lease endpoint Released
+  IdleLease : (1 payload : resource) -> Lease resource Idle
+  CallingLease : (1 payload : resource) -> Lease resource Calling
+  ReleasedLease : Lease resource Released
 
-public export
-borrow : (1 owner : Lease endpoint Idle) -> Lease endpoint Calling
+||| Acquisition consumes a supplied resource; it cannot establish that a
+||| copyable value was an exclusive native allocation in the first place.
+export
+acquire : (1 payload : resource) -> Lease resource Idle
+acquire payload = IdleLease payload
+
+export
+borrow : (1 owner : Lease resource Idle) -> Lease resource Calling
 borrow (IdleLease entries) = CallingLease entries
 
-public export
-returnBorrow : (1 call : Lease endpoint Calling) -> Lease endpoint Idle
+export
+returnBorrow : (1 call : Lease resource Calling) -> Lease resource Idle
 returnBorrow (CallingLease entries) = IdleLease entries
 
-public export
-release : (1 owner : Lease endpoint Idle) -> Lease endpoint Released
-release (IdleLease _) = ReleasedLease
+export
+release : ((1 payload : resource) -> ()) ->
+  (1 owner : Lease resource Idle) -> Lease resource Released
+release destroy (IdleLease payload) = case destroy payload of
+  () => ReleasedLease
 
-public export
-borrowReturnsOwner : (r : Registry endpoint) ->
-  returnBorrow (borrow (IdleLease r)) = IdleLease r
-borrowReturnsOwner r = Refl
+export
+borrowReturnsOwner : (owner : Lease resource Idle) ->
+  returnBorrow (borrow owner) = owner
+borrowReturnsOwner (IdleLease payload) = Refl
 
 ||| A normal callback may change its own disjoint context, but must preserve
 ||| both registry endpoints. This equality is a premise, not a runtime check.

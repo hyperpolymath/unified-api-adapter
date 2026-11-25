@@ -12,6 +12,11 @@ const Context = struct {
 // The fixture retains the typed owner and checks the opaque identity passed by
 // the real wrapper; no foreign pointer is cast or dereferenced by this harness.
 var active_context: ?*Context = null;
+var secondary_calls: usize = 0;
+fn secondary_callback(_: ?*anyopaque, _: ?[*]const u8, _: usize) callconv(.c) c_int {
+    secondary_calls += 1;
+    return 3;
+}
 fn callback(raw: ?*anyopaque, bytes: ?[*]const u8, len: usize) callconv(.c) c_int {
     const ctx = active_context orelse return 6;
     if (raw != @as(?*anyopaque, ctx)) return 6;
@@ -31,10 +36,11 @@ test "actual wrapper restores idle and endpoint identities on all normal exits" 
     var context = Context{ .registry = registry };
     active_context = &context;
     defer active_context = null;
+    secondary_calls = 0;
     var other = Context{ .registry = registry };
     const payload = [_]u8{ 0, 13, 255 };
     try std.testing.expectEqual(@as(c_int, 0), api.uaa_registry_register(registry, 1, callback, &context));
-    try std.testing.expectEqual(@as(c_int, 0), api.uaa_registry_register(registry, 9, callback, &other));
+    try std.testing.expectEqual(@as(c_int, 0), api.uaa_registry_register(registry, 9, secondary_callback, &other));
     const before = registry.*;
     try std.testing.expectEqual(@as(c_int, 4), api.uaa_registry_call(registry, 1, null, 3));
     try std.testing.expectEqual(@as(usize, 0), context.calls);
@@ -48,6 +54,7 @@ test "actual wrapper restores idle and endpoint identities on all normal exits" 
     }
     try std.testing.expectEqual(@as(usize, 7), context.calls);
     try std.testing.expectEqual(@as(usize, 0), other.calls);
+    try std.testing.expectEqual(@as(usize, 0), secondary_calls);
     try std.testing.expectEqual(@as(c_int, 0), api.uaa_registry_unregister(registry, 1));
     try std.testing.expectEqual(@as(c_int, 11), api.uaa_registry_call(registry, 1, &payload, payload.len));
 }

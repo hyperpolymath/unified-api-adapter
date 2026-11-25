@@ -32,14 +32,31 @@ IDRIS
 (cd "$work"; "$idris" --total -Werror --check BadLease.idr) > "$out/reject-duplicate.txt" 2>&1 || true
 grep -q '^Error:' "$out/reject-duplicate.txt"
 grep -Ei 'linear|multiplicity|more than once|non-linear' "$out/reject-duplicate.txt" >/dev/null
+# The public module hides constructors. Also expose ONLY a private scratch copy
+# to show the real linear payload rejects destruct-and-reconstruct duplication.
+mkdir "$work/exposed"
+cp -R "$work/Abi" "$work/exposed/"
+sed 's/^export$/public export/' "$work/Abi/RegistryOwnership.idr" > "$work/exposed/Abi/RegistryOwnership.idr"
+cat > "$work/exposed/BadReconstruct.idr" <<'IDRIS'
+module BadReconstruct
+import Abi.RegistryOwnership
+%default total
+duplicate : (1 owner : Lease resource Idle) -> (Lease resource Idle, Lease resource Idle)
+duplicate (IdleLease payload) = (IdleLease payload, IdleLease payload)
+IDRIS
+(cd "$work/exposed"; "$idris" --total -Werror --check BadReconstruct.idr) > "$out/reject-reconstruct.txt" 2>&1 || true
+grep -q '^Error:' "$out/reject-reconstruct.txt"
+grep -Ei 'linear|multiplicity|more than once|non-linear' "$out/reject-reconstruct.txt" >/dev/null
+grep -q 'BadReconstruct' "$out/reject-reconstruct.txt"
 for mode in Debug ReleaseSafe ReleaseFast ReleaseSmall; do
   "$zig" test "$work/RegistryOwnershipTests.zig" -lc -O "$mode" > "$out/native-$mode.txt" 2>&1
 done
 cp "$work/ffi/src/registry.zig" "$work/original.zig"
-for mutant in cleanup context guard; do
+for mutant in cleanup context callback guard; do
   case "$mutant" in
     cleanup) sed '/defer registry\.\* = state.finish/d' "$work/original.zig" ;;
     context) sed 's/endpoint.callback(endpoint.context, bytes, len)/endpoint.callback(null, bytes, len)/' "$work/original.zig" ;;
+    callback) sed 's/endpoint.callback(endpoint.context, bytes, len)/(registry.rest orelse return 11).callback(endpoint.context, bytes, len)/' "$work/original.zig" ;;
     guard) sed '/if (bytes == null and len != 0) return 4;/d' "$work/original.zig" ;;
   esac > "$work/ffi/src/registry.zig"
   if cmp -s "$work/original.zig" "$work/ffi/src/registry.zig"; then echo 'FAIL: unchanged mutant' >&2; exit 1; fi
