@@ -4,14 +4,11 @@
 // not a source/compiler refinement proof or a built-in network transport.
 const std = @import("std");
 const known = @import("protocol_tag.zig").known;
+const state = @import("registry_state.zig");
 
 pub const Callback = *const fn (?*anyopaque, ?[*]const u8, usize) callconv(.c) c_int;
 const Endpoint = struct { callback: Callback, context: ?*anyopaque };
-pub const Registry = struct {
-    rest: ?Endpoint = null,
-    mcp: ?Endpoint = null,
-    active: bool = false,
-};
+pub const Registry = state.State(Endpoint);
 
 // All calls on one live registry must be serialized by its owner. Callback
 // code/context and input remain borrowed for the synchronous call only.
@@ -32,44 +29,47 @@ pub export fn uaa_registry_register(r: ?*Registry, tag: u8, callback: ?Callback,
     const registry = r orelse return 4;
     if (registry.active) return 6;
     if (!known(tag)) return 2;
-    const slot = switch (tag) {
-        1 => &registry.mcp,
-        9 => &registry.rest,
+    const slot: state.Slot = switch (tag) {
+        1 => .mcp,
+        9 => .rest,
         else => return 11,
     };
     const cb = callback orelse return 4;
-    if (slot.* != null) return 9;
-    slot.* = .{ .callback = cb, .context = context };
-    return 0;
+    const reply = state.register(Endpoint, registry.*, slot, .{ .callback = cb, .context = context });
+    registry.* = reply.next;
+    return reply.status;
 }
 
 pub export fn uaa_registry_unregister(r: ?*Registry, tag: u8) c_int {
     const registry = r orelse return 4;
     if (registry.active) return 6;
     if (!known(tag)) return 2;
-    const slot = switch (tag) {
-        1 => &registry.mcp,
-        9 => &registry.rest,
+    const slot: state.Slot = switch (tag) {
+        1 => .mcp,
+        9 => .rest,
         else => return 11,
     };
-    if (slot.* == null) return 8;
-    slot.* = null;
-    return 0;
+    const reply = state.unregister(Endpoint, registry.*, slot);
+    registry.* = reply.next;
+    return reply.status;
 }
 
 pub export fn uaa_registry_call(r: ?*Registry, tag: u8, bytes: ?[*]const u8, len: usize) c_int {
     const registry = r orelse return 4;
     if (registry.active) return 6;
     if (!known(tag)) return 2;
-    const endpoint = switch (tag) {
-        1 => registry.mcp,
-        9 => registry.rest,
-        else => null,
-    } orelse return 11;
+    const slot: state.Slot = switch (tag) {
+        1 => .mcp,
+        9 => .rest,
+        else => return 11,
+    };
+    const reply = state.begin(Endpoint, registry.*, slot);
+    if (reply.status != 0) return reply.status;
+    const endpoint = reply.selected orelse return 11;
+    registry.* = reply.next;
+    defer registry.* = state.finish(Endpoint, registry.*);
     if (bytes == null and len != 0) return 4;
-    registry.active = true;
-    defer registry.active = false;
     const status = endpoint.callback(endpoint.context, bytes, len);
     // A foreign callback cannot inject an unknown ABI status.
-    return if (status >= 0 and status <= 11) status else 6;
+    return state.sanitize(status);
 }
