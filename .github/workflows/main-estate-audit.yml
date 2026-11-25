@@ -70,9 +70,11 @@ jobs:
           test -f LICENSE.txt || test -f LICENSE || test -f LICENSE.md || test -f LICENSE.adoc
 
           echo "=== cicd-suite: idris2-abi & zig-unified-api-adapter ==="
-          # git grep exits 1 when no tracked .zig file exists, so no guard is needed.
-          if git grep -E 'std\.fs|std\.io' -- '*.zig'; then
+          # Enforce the effect boundary on runtime FFI modules. Standalone
+          # verification runners outside this tree must emit oracle witnesses.
+          if git grep -E 'std\.fs|std\.io' -- 'src/interface/ffi/src/*.zig'; then
             echo "::error::Zig FFI modules contain prohibited side-effects (std.fs/std.io)"
             exit 1
           fi
           echo "Central Estate CI/CD Audit passed."
+
