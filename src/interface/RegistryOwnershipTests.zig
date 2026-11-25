@@ -9,8 +9,12 @@ const Context = struct {
     observed_borrow: bool = false,
     violate_frame: bool = false,
 };
+// The fixture retains the typed owner and checks the opaque identity passed by
+// the real wrapper; no foreign pointer is cast or dereferenced by this harness.
+var active_context: ?*Context = null;
 fn callback(raw: ?*anyopaque, bytes: ?[*]const u8, len: usize) callconv(.c) c_int {
-    const ctx: *Context = @ptrCast(@alignCast(raw orelse return 6));
+    const ctx = active_context orelse return 6;
+    if (raw != @as(?*anyopaque, ctx)) return 6;
     ctx.calls += 1;
     ctx.observed_borrow = ctx.registry.active and len == 3 and bytes != null;
     if (bytes) |p| ctx.observed_borrow = ctx.observed_borrow and p[0] == 0 and p[1] == 13 and p[2] == 255;
@@ -25,6 +29,8 @@ test "actual wrapper restores idle and endpoint identities on all normal exits" 
     const registry = api.uaa_registry_create() orelse return error.OutOfMemory;
     defer _ = api.uaa_registry_destroy(registry);
     var context = Context{ .registry = registry };
+    active_context = &context;
+    defer active_context = null;
     var other = Context{ .registry = registry };
     const payload = [_]u8{ 0, 13, 255 };
     try std.testing.expectEqual(@as(c_int, 0), api.uaa_registry_register(registry, 1, callback, &context));
@@ -50,6 +56,8 @@ test "raw alias counterexample demonstrates necessity of the callback frame prem
     const registry = api.uaa_registry_create() orelse return error.OutOfMemory;
     defer _ = api.uaa_registry_destroy(registry);
     var context = Context{ .registry = registry, .violate_frame = true };
+    active_context = &context;
+    defer active_context = null;
     const payload = [_]u8{ 0, 13, 255 };
     try std.testing.expectEqual(@as(c_int, 0), api.uaa_registry_register(registry, 9, callback, &context));
     try std.testing.expect(registry.rest != null);
