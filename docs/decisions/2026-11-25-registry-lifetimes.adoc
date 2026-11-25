@@ -17,6 +17,14 @@ retained or borrowed permit and must be rejected. The destroy decision mirrors
 the actual idle/busy branches: busy destruction refuses; idle destruction
 detaches every registration, including registrations not individually removed.
 
+`EndpointRegions` associates each callback and optional context with logical
+region identities supplied by the boundary contract. Code/context retentions
+are computed from the two actual `Abi.Registry` entries, including shared
+regions. A theorem over `Abi.RegistryState.unregister` shows that detaching one
+of two shared-context slots leaves one context retention. Idle destruction
+clears both slots' retentions. Relating logical identities to native allocations
+is a correspondence premise; pointer bits do not establish that association.
+
 The counts are ghost permissions. They are not fields or checks in the Zig ABI.
 Acquiring a permit does not prove that a supplied pointer is live or exclusive,
 and foreign callers can violate the contract. No stale pointer is passed to the

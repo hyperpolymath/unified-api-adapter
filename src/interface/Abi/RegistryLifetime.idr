@@ -7,6 +7,73 @@ import Abi.Status
 
 %default total
 
+||| Logical region identities supplied by the boundary correspondence contract.
+||| They are not computed by casting or inspecting native pointer bits.
+public export
+record EndpointRegions where
+  constructor Regions
+  codeRegion : Nat
+  contextRegion : Maybe Nat
+
+public export
+sameRegion : Nat -> Nat -> Bool
+sameRegion Z Z = True
+sameRegion (S a) (S b) = sameRegion a b
+sameRegion _ _ = False
+
+sameRegionSelf : (region : Nat) -> sameRegion region region = True
+sameRegionSelf Z = Refl
+sameRegionSelf (S region) = sameRegionSelf region
+
+public export
+contextRefs : Nat -> Maybe EndpointRegions -> Nat
+contextRefs region Nothing = 0
+contextRefs region (Just (Regions _ Nothing)) = 0
+contextRefs region (Just (Regions _ (Just target))) =
+  if sameRegion region target then 1 else 0
+
+public export
+codeRefs : Nat -> Maybe EndpointRegions -> Nat
+codeRefs region Nothing = 0
+codeRefs region (Just endpoint) =
+  if sameRegion region (codeRegion endpoint) then 1 else 0
+
+public export
+contextRetentions : Nat -> Registry EndpointRegions -> Nat
+contextRetentions region r =
+  contextRefs region (restEndpoint r) + contextRefs region (mcpEndpoint r)
+
+public export
+codeRetentions : Nat -> Registry EndpointRegions -> Nat
+codeRetentions region r =
+  codeRefs region (restEndpoint r) + codeRefs region (mcpEndpoint r)
+
+public export
+retentions : Nat -> Registry EndpointRegions -> Nat
+retentions region r = codeRetentions region r + contextRetentions region r
+
+public export
+sharedContext : Nat -> Nat -> Nat -> Registry EndpointRegions
+sharedContext firstCode secondCode context =
+  MkRegistry (Just (Regions firstCode (Just context)))
+             (Just (Regions secondCode (Just context)))
+
+public export
+sharedContextHasTwoRetentions : (firstCode, secondCode, context : Nat) ->
+  contextRetentions context (sharedContext firstCode secondCode context) = 2
+sharedContextHasTwoRetentions firstCode secondCode context =
+  rewrite sameRegionSelf context in Refl
+
+||| This uses the existing actual-state ABI transition, not a separate detach
+||| model. Removing REST must leave the MCP registration's context retention.
+public export
+detachOneKeepsSharedContext : (firstCode, secondCode, context : Nat) ->
+  contextRetentions context
+    (entries (next (unregister RESTSlot
+      (MkState (sharedContext firstCode secondCode context) False)))) = 1
+detachOneKeepsSharedContext firstCode secondCode context =
+  rewrite sameRegionSelf context in Refl
+
 ||| Caller-side permission ledger. The indices count retained registrations and
 ||| transient readers of a supplied resource; they are not stored by the Zig ABI.
 ||| Acquisition cannot establish that a copyable pointer is exclusive or live.
@@ -82,8 +149,13 @@ busyDestroyRefuses r = Refl
 
 public export
 idleDestroyDetaches : (r : Registry endpoint) ->
-  retainedAfter (destroyRegistry (Just (MkState r False))) = emptyRegistry
+  retainedAfter (destroyRegistry (Just (MkState r False))) = Abi.Registry.emptyRegistry
 idleDestroyDetaches r = Refl
+
+public export
+idleDestroyClearsRetentions : (region : Nat) -> (r : Registry EndpointRegions) ->
+  retentions region (retainedAfter (destroyRegistry (Just (MkState r False)))) = 0
+idleDestroyClearsRetentions region r = Refl
 
 -- A shared callback/context registered in two slots needs two retentions.
 -- Unregister drops one; idle destroy drops every remaining registration.
