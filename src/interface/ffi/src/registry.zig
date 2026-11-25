@@ -10,8 +10,10 @@ pub const Callback = *const fn (?*anyopaque, ?[*]const u8, usize) callconv(.c) c
 const Endpoint = struct { callback: Callback, context: ?*anyopaque };
 pub const Registry = state.State(Endpoint);
 
-// All calls on one live registry must be serialized by its owner. Callback
-// code/context and input remain borrowed for the synchronous call only.
+// All calls on one live registry must be serialized by its owner. Registered
+// callback code/context must remain valid until that registration is removed
+// or the registry is destroyed. Input is borrowed for the synchronous call only.
+// Destroy/unregister do not free callback/context storage owned by the caller.
 pub export fn uaa_registry_create() ?*Registry {
     const r = std.heap.c_allocator.create(Registry) catch return null;
     r.* = .{};
