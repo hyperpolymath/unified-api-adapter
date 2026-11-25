@@ -55,4 +55,6 @@ if "$work/caller" > "$evidence/mutant.csv" 2> "$evidence/mutant.log"; then
 fi
 echo PASS > "$evidence/result.txt"
 EVIDENCE_DIR="$evidence/state" bash "$root/scripts/check-registry-state.sh"
+EVIDENCE_DIR="$evidence/ownership" bash "$root/scripts/check-registry-ownership.sh"
+EVIDENCE_DIR="$evidence/ownership-controls" bash "$root/scripts/check-registry-ownership-controls.sh"
 echo 'PASS: real C ABI, Idris differential matrix, lifetime/refusal regressions and rejecting Zig mutant'

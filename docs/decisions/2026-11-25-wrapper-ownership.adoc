@@ -1,0 +1,39 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Registry wrapper ownership qualification
+
+The ABI remains Idris2-owned and the runtime FFI/API remains pure Zig.
+`Abi.RegistryOwnership` adds a linear usage protocol for an already-acquired
+logical owner and a callback-frame premise. It does not establish acquisition,
+unforgeability, pointer validity or foreign callers' compliance.
+The lease's constructors are hidden and its generic resource payload is linear.
+Acquisition consumes a supplied resource; it does not turn a copyable registry
+value into an exclusive machine allocation. Release requires a consuming finalizer.
+
+`check-registry-ownership.sh` checks the Idris module without holes, rejects
+duplicated linear ownership, and executes the actual `registry.zig` wrapper in
+four Zig optimisation modes. Fixtures cover exact callback/context identity,
+invalid-span cleanup, callback error and out-of-range statuses, reentrant public
+operation refusal and endpoint preservation. Compiled cleanup/context/span
+mutations must fail these fixtures after compiling successfully. A separate
+wrong-callback-pointer mutant must fail with the requested context unchanged;
+the endpoints use distinct callback functions. Both direct duplication and
+destruct-and-reconstruct duplication of the actual linear payload must reject.
+
+A second fixture intentionally writes through a raw registry alias. The call
+clears the busy flag on return but does not restore the endpoint removed by that
+write. This expected counterexample demonstrates the necessity of the ownership
+premise; it must never be counted as a passing arbitrary-alias safety test.
+
+The owner must serialize access and keep the allocation live. Callback code and
+context must stay valid while their registration may be called; unregister
+before their lifetime ends. During invocation the input must remain readable
+and immutable, the callback may modify only disjoint context, and it must return
+normally. Busy refusal cannot validate an arbitrary or stale machine pointer.
+
+Atoma's https://github.com/hyperpolymath/atoma/pull/33[companion source interpretation]
+targets conditional call framing and remains under qualification. No checked
+Atoma framing artifact or ownership of arbitrary foreign memory is claimed here.
+Allocation failure,
+stale-handle rejection, non-local exit, synchronization, compiler refinement and
+cross-kernel statement correspondence remain separate obligations. No ABI change
+or new checked-handle interface is introduced here.
