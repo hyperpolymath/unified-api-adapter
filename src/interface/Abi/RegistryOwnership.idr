@@ -52,5 +52,5 @@ callbackReturnRestores : (before : Registry endpoint) ->
   finishCurrent (MkState (after result) True) = MkState before False
 callbackReturnRestores before (FramedReturn before Refl) = Refl
 
-||| No transition releases a Calling lease: destroy is permitted only at Idle.
-||| Raw aliases, concurrent calls and non-local exits remain external obligations.
+-- No transition releases a Calling lease: destroy is permitted only at Idle.
+-- Raw aliases, concurrent calls and non-local exits remain external obligations.
